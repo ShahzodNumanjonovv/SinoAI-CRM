@@ -1,5 +1,6 @@
 // app/page.tsx
-import {redirect} from 'next/navigation';
-export default function Page() {
-  redirect('/uz'); // default til
+import { redirect } from "next/navigation";
+
+export default function Home() {
+  redirect("/statistics");
 }
