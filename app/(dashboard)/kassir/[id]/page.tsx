@@ -1,48 +1,37 @@
-// app/(dashboard)/kassir/[id]/page.tsx
+// app/(dashboard)/users/[id]/edit/page.tsx
 import Link from "next/link";
 import { getBaseUrl } from "@/lib/utils";
-import InvoiceStatusButtons from "@/components/InvoiceStatusButtons";
 
-type InvoiceDetail = {
+type User = {
   id: string;
-  code: number;
-  status: "DRAFT" | "UNPAID" | "PAID" | "CANCELLED";
-  subtotal: number;
-  discountAmt: number;
-  total: number;
-  createdAt: string;
-  patient: { firstName: string; lastName: string } | null;
-  discount: { name: string } | null;
-  items: {
-    id: string;
-    qty: number;
-    priceUZS: number;
-    service: { code: string; name: string };
-  }[];
+  firstName: string;
+  lastName: string;
+  phone: string;
+  role: string;
 };
 
-async function getInvoice(id: string) {
+async function getUser(id: string): Promise<User | null> {
   const base = await getBaseUrl();
-  const res = await fetch(`${base}/api/invoices/${id}`, { cache: "no-store" });
+  const res = await fetch(`${base}/api/users/${id}`, { cache: "no-store" });
   if (!res.ok) return null;
-  const data = (await res.json()) as { ok: boolean; invoice: InvoiceDetail };
-  return data.invoice;
+  const data = await res.json();
+  return (data?.user ?? null) as User | null;
 }
 
-export default async function InvoiceDetailPage({
+export default async function EditUserPage({
   params,
 }: {
   // Next 15: params Promise bo‘lib keladi
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params; // <-- MUHIM: await params
-  const invoice = await getInvoice(id);
+  const { id } = await params; // <-- MUHIM!
+  const user = await getUser(id);
 
-  if (!invoice) {
+  if (!user) {
     return (
-      <div className="p-6">
-        <p className="text-red-600">Hisob-faktura topilmadi.</p>
-        <Link href="/kassir" className="text-emerald-700 underline">
+      <div className="p-6 space-y-3">
+        <p className="text-red-600">Foydalanuvchi topilmadi.</p>
+        <Link href="/users" className="text-emerald-700 underline">
           ← Ro‘yxatga qaytish
         </Link>
       </div>
@@ -52,80 +41,80 @@ export default async function InvoiceDetailPage({
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">
-            Hisob-faktura #{invoice.code}
-          </h1>
-          <p className="text-slate-500">
-            {invoice.patient
-              ? `${invoice.patient.firstName} ${invoice.patient.lastName}`
-              : "—"}
-            {" · "}
-            {new Date(invoice.createdAt).toLocaleString("uz-UZ")}
-          </p>
-        </div>
-        <Link href="/kassir" className="btn">
+        <h1 className="text-xl font-semibold">Foydalanuvchini yangilash</h1>
+        <Link href="/users" className="btn">
           ← Ro‘yxat
         </Link>
       </div>
 
-      <InvoiceStatusButtons id={invoice.id} current={invoice.status} />
-
-      <div className="rounded border bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
-              <th>Kod</th>
-              <th>Xizmat</th>
-              <th className="text-right">Narx (UZS)</th>
-              <th className="text-right">Soni</th>
-              <th className="text-right">Jami (UZS)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoice.items.map((it) => (
-              <tr key={it.id} className="border-t [&>td]:px-3 [&>td]:py-2">
-                <td>{it.service.code}</td>
-                <td>{it.service.name}</td>
-                <td className="text-right">
-                  {it.priceUZS.toLocaleString("uz-UZ")}
-                </td>
-                <td className="text-right">{it.qty}</td>
-                <td className="text-right">
-                  {(it.qty * it.priceUZS).toLocaleString("uz-UZ")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="ml-auto w-full max-w-sm space-y-2">
-        <div className="flex justify-between">
-          <span className="text-slate-600">Oraliq jami:</span>
-          <span>{invoice.subtotal.toLocaleString("uz-UZ")} UZS</span>
+      {/* Minimal forma (hozircha action yo‘q – kerak bo‘lsa /api/users/[id] ga PUT qo‘shasiz) */}
+      <form className="mx-auto max-w-xl space-y-4 rounded border bg-white p-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-sm text-slate-600">Ism</span>
+            <input
+              defaultValue={user.firstName}
+              className="w-full rounded border px-3 py-2"
+              name="firstName"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-sm text-slate-600">Familiya</span>
+            <input
+              defaultValue={user.lastName}
+              className="w-full rounded border px-3 py-2"
+              name="lastName"
+            />
+          </label>
         </div>
-        <div className="flex justify-between">
-          <span className="text-slate-600">
-            Chegirma{invoice.discount ? ` (${invoice.discount.name})` : ""}:
+
+        <label className="block space-y-1">
+          <span className="text-sm text-slate-600">Telefon</span>
+          <input
+            defaultValue={user.phone}
+            className="w-full rounded border px-3 py-2"
+            name="phone"
+          />
+        </label>
+
+        <label className="block space-y-1">
+          <span className="text-sm text-slate-600">Rol</span>
+          <select
+            defaultValue={user.role}
+            className="w-full rounded border px-3 py-2"
+            name="role"
+          >
+            <option value="ADMIN">Admin</option>
+            <option value="MANAGER">Menejer</option>
+            <option value="DOCTOR">Shifokor</option>
+            <option value="RECEPTION">Qabulxona xodimi</option>
+          </select>
+        </label>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            className="rounded bg-emerald-700 px-4 py-2 text-white"
+            disabled
+            title="Server tomonda PUT marshrutini qo‘shganingizdan keyin yoqiladi"
+          >
+            Saqlash
+          </button>
+          <span className="text-xs text-slate-500">
+            (PUT /api/users/[id] qo‘shilgach ishga tushiring)
           </span>
-          <span>{invoice.discountAmt.toLocaleString("uz-UZ")} UZS</span>
         </div>
-        <div className="flex justify-between text-lg font-semibold">
-          <span>Umumiy:</span>
-          <span>{invoice.total.toLocaleString("uz-UZ")} UZS</span>
-        </div>
-      </div>
+      </form>
     </div>
   );
 }
 
-// Agar metadata kerak bo‘lsa, xuddi shu pattern:
+// Ixtiyoriy: metadata ham params ni await qiladi
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return { title: `Hisob-faktura ${id}` };
+  return { title: `Foydalanuvchini tahrirlash · ${id}` };
 }
