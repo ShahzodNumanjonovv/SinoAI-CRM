@@ -21,10 +21,9 @@ async function getUser(id: string): Promise<User | null> {
 export default async function EditUserPage({
   params,
 }: {
-  // Next 15: params Promise bo‘lib keladi
-  params: Promise<{ id: string }>;
+  params: { id: string }; // ✅ oddiy object
 }) {
-  const { id } = await params; // <-- MUHIM!
+  const { id } = params; // ✅ endi Promise emas
   const user = await getUser(id);
 
   if (!user) {
@@ -47,7 +46,6 @@ export default async function EditUserPage({
         </Link>
       </div>
 
-      {/* Minimal forma (hozircha action yo‘q – kerak bo‘lsa /api/users/[id] ga PUT qo‘shasiz) */}
       <form className="mx-auto max-w-xl space-y-4 rounded border bg-white p-4">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <label className="space-y-1">
@@ -91,30 +89,22 @@ export default async function EditUserPage({
           </select>
         </label>
 
-        <div className="flex items-center gap-3">
-          <button
-            type="submit"
-            className="rounded bg-emerald-700 px-4 py-2 text-white"
-            disabled
-            title="Server tomonda PUT marshrutini qo‘shganingizdan keyin yoqiladi"
-          >
-            Saqlash
-          </button>
-          <span className="text-xs text-slate-500">
-            (PUT /api/users/[id] qo‘shilgach ishga tushiring)
-          </span>
-        </div>
+        <button
+          type="submit"
+          className="rounded bg-emerald-700 px-4 py-2 text-white"
+          disabled
+        >
+          Saqlash
+        </button>
       </form>
     </div>
   );
 }
 
-// Ixtiyoriy: metadata ham params ni await qiladi
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string }; // ✅ bu ham object
 }) {
-  const { id } = await params;
-  return { title: `Foydalanuvchini tahrirlash · ${id}` };
+  return { title: `Foydalanuvchini tahrirlash · ${params.id}` };
 }
