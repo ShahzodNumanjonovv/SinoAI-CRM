@@ -1,5 +1,6 @@
 // app/(dashboard)/kassir/[id]/page.tsx
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import InvoiceStatusButtons from "@/components/InvoiceStatusButtons";
 import { getBaseUrl } from "@/lib/utils";
 
@@ -25,28 +26,22 @@ async function getInvoice(id: string): Promise<InvoiceDetail | null> {
   const base = await getBaseUrl();
   const res = await fetch(`${base}/api/invoices/${id}`, { cache: "no-store" });
   if (!res.ok) return null;
-  const data = (await res.json()) as { ok: boolean; invoice: InvoiceDetail };
+  const data = (await res.json()) as { ok: boolean; invoice?: InvoiceDetail };
   return data.invoice ?? null;
 }
 
 export default async function InvoiceDetailPage({
   params,
 }: {
-  // ✅ Next 15: params Promise bo‘ladi
+  // Next 15: params Promise bo‘ladi
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params; // ✅ await shart
+  const { id } = await params; // <- MUHIM: await qilingan
   const invoice = await getInvoice(id);
 
   if (!invoice) {
-    return (
-      <div className="p-6">
-        <p className="text-red-600">Hisob-faktura topilmadi.</p>
-        <Link href="/kassir" className="text-emerald-700 underline">
-          ← Ro‘yxatga qaytish
-        </Link>
-      </div>
-    );
+    // yaxshiroq 404
+    notFound();
   }
 
   return (
@@ -118,7 +113,7 @@ export default async function InvoiceDetailPage({
   );
 }
 
-// (ixtiyoriy) Metadata ham Promise params bilan
+// (ixtiyoriy) Metadata — Promise params bilan
 export async function generateMetadata({
   params,
 }: {
