@@ -1,0 +1,8 @@
+/* styles/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ixtiyoriy, lekin qulay */
+html, body { height: 100%; }
+body { @apply bg-slate-50 text-slate-900 antialiased; }

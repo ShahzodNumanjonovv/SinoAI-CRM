@@ -1,0 +1,33 @@
+{
+  "name": "eclinic-saas",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "prisma:studio": "prisma studio",
+    "db:push": "prisma db push",
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "6.15.0",
+    "autoprefixer": "^10.4.20",
+    "bcryptjs": "^2.4.3",
+    "clsx": "^2.1.1",
+    "cookie": "^0.6.0",
+    "dayjs": "^1.11.13",
+    "next": "^15.0.0",
+    "postcss": "^8.4.41",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.10",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "24.3.1",
+    "@types/react": "19.1.12",
+    "prisma": "^6.15.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.5.4"
+  }
+}
