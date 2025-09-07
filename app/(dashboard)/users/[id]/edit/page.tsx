@@ -1,6 +1,9 @@
 // app/(dashboard)/users/[id]/edit/page.tsx
-import { getBaseUrl } from "@/lib/utils";
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import EditForm from "./EditForm";
+
+export const dynamic = "force-dynamic"; // Vercel/SSRda statiklashmasin
 
 type User = {
   id: string;
@@ -11,37 +14,43 @@ type User = {
 };
 
 async function getUser(id: string): Promise<User | null> {
-  const base = await getBaseUrl();
-  const r = await fetch(`${base}/api/users/${id}`, { cache: "no-store" });
-  if (!r.ok) return null;
-  const j = await r.json();
-  return j?.user ?? null;
+  // Server Component ichida nisbiy yo‘lni ishlatamiz – host bilan bog‘liq muammo bo‘lmaydi
+  const res = await fetch(`/api/users/${id}`, { cache: "no-store" });
+  if (!res.ok) return null;
+  const data = await res.json().catch(() => null);
+  return (data?.user as User) ?? null;
 }
 
 export default async function EditUserPage({
   params,
 }: {
+  // ✅ Next 15: params – Promise
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;          // <- MUHIM: params ni await qiling
+  const { id } = await params;         // ✅ majburiy await
   const user = await getUser(id);
-
-  if (!user) {
-    return (
-      <div className="p-6">
-        <p>Foydalanuvchi topilmadi.</p>
-        <Link href="/users" className="text-emerald-700 underline">
-          ← Orqaga
-        </Link>
-      </div>
-    );
-  }
+  if (!user) notFound();
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-xl font-semibold">Foydalanuvchini tahrirlash</h1>
-      {/* form… (mavjud formangizni shu yerga qo'ying) */}
-      <pre className="text-sm bg-slate-50 p-3 rounded">{JSON.stringify(user, null, 2)}</pre>
+    <div className="p-6 max-w-2xl">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Foydalanuvchini yangilash</h1>
+        <Link href="/users" className="text-emerald-700 underline">
+          ← Ortga
+        </Link>
+      </div>
+
+      <EditForm defaultUser={user} />
     </div>
   );
+}
+
+// (ixtiyoriy) sarlavha
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return { title: `Foydalanuvchini tahrirlash • ${id}` };
 }

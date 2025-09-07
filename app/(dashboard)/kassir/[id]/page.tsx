@@ -2,7 +2,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import InvoiceStatusButtons from "@/components/InvoiceStatusButtons";
-import { getBaseUrl } from "@/lib/utils";
+
+export const dynamic = "force-dynamic"; // Vercel’da statiklashmasin
 
 type InvoiceDetail = {
   id: string;
@@ -23,26 +24,27 @@ type InvoiceDetail = {
 };
 
 async function getInvoice(id: string): Promise<InvoiceDetail | null> {
-  const base = await getBaseUrl();
-  const res = await fetch(`${base}/api/invoices/${id}`, { cache: "no-store" });
-  if (!res.ok) return null;
-  const data = (await res.json()) as { ok: boolean; invoice?: InvoiceDetail };
-  return data.invoice ?? null;
+  // Server Component ichida nisbiy URL – host muammosiz
+  try {
+    const res = await fetch(`/api/invoices/${id}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { ok: boolean; invoice?: InvoiceDetail };
+    return data.invoice ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export default async function InvoiceDetailPage({
   params,
 }: {
-  // Next 15: params Promise bo‘ladi
+  // ✅ Next 15: params — Promise
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params; // <- MUHIM: await qilingan
+  const { id } = await params; // ✅ majburiy await
   const invoice = await getInvoice(id);
 
-  if (!invoice) {
-    // yaxshiroq 404
-    notFound();
-  }
+  if (!invoice) notFound();
 
   return (
     <div className="space-y-4 p-6">
@@ -113,7 +115,7 @@ export default async function InvoiceDetailPage({
   );
 }
 
-// (ixtiyoriy) Metadata — Promise params bilan
+// (ixtiyoriy) metadata
 export async function generateMetadata({
   params,
 }: {
