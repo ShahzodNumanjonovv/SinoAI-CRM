@@ -1,5 +1,6 @@
-import { getBaseUrl } from "@/lib/utils";
+// app/(dashboard)/kassir/[id]/page.tsx
 import Link from "next/link";
+import { getBaseUrl } from "@/lib/utils";
 import InvoiceStatusButtons from "@/components/InvoiceStatusButtons";
 
 type InvoiceDetail = {
@@ -12,7 +13,12 @@ type InvoiceDetail = {
   createdAt: string;
   patient: { firstName: string; lastName: string } | null;
   discount: { name: string } | null;
-  items: { id: string; qty: number; priceUZS: number; service: { code: string; name: string } }[];
+  items: {
+    id: string;
+    qty: number;
+    priceUZS: number;
+    service: { code: string; name: string };
+  }[];
 };
 
 async function getInvoice(id: string) {
@@ -23,13 +29,22 @@ async function getInvoice(id: string) {
   return data.invoice;
 }
 
-export default async function InvoiceDetailPage({ params }: { params: { id: string } }) {
-  const invoice = await getInvoice(params.id);
+export default async function InvoiceDetailPage({
+  params,
+}: {
+  // Next 15: params Promise bo‘lib keladi
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params; // <-- MUHIM: await params
+  const invoice = await getInvoice(id);
+
   if (!invoice) {
     return (
       <div className="p-6">
         <p className="text-red-600">Hisob-faktura topilmadi.</p>
-        <Link href="/kassir" className="text-emerald-700 underline">← Ro‘yxatga qaytish</Link>
+        <Link href="/kassir" className="text-emerald-700 underline">
+          ← Ro‘yxatga qaytish
+        </Link>
       </div>
     );
   }
@@ -38,14 +53,20 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Hisob-faktura #{invoice.code}</h1>
+          <h1 className="text-xl font-semibold">
+            Hisob-faktura #{invoice.code}
+          </h1>
           <p className="text-slate-500">
-            {invoice.patient ? `${invoice.patient.firstName} ${invoice.patient.lastName}` : "—"}
+            {invoice.patient
+              ? `${invoice.patient.firstName} ${invoice.patient.lastName}`
+              : "—"}
             {" · "}
             {new Date(invoice.createdAt).toLocaleString("uz-UZ")}
           </p>
         </div>
-        <Link href="/kassir" className="btn">← Ro‘yxat</Link>
+        <Link href="/kassir" className="btn">
+          ← Ro‘yxat
+        </Link>
       </div>
 
       <InvoiceStatusButtons id={invoice.id} current={invoice.status} />
@@ -53,7 +74,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
       <div className="rounded border bg-white">
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
-            <tr className="[&>th]:text-left [&>th]:px-3 [&>th]:py-2">
+            <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
               <th>Kod</th>
               <th>Xizmat</th>
               <th className="text-right">Narx (UZS)</th>
@@ -62,13 +83,17 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
             </tr>
           </thead>
           <tbody>
-            {invoice.items.map(it => (
+            {invoice.items.map((it) => (
               <tr key={it.id} className="border-t [&>td]:px-3 [&>td]:py-2">
                 <td>{it.service.code}</td>
                 <td>{it.service.name}</td>
-                <td className="text-right">{it.priceUZS.toLocaleString("uz-UZ")}</td>
+                <td className="text-right">
+                  {it.priceUZS.toLocaleString("uz-UZ")}
+                </td>
                 <td className="text-right">{it.qty}</td>
-                <td className="text-right">{(it.qty * it.priceUZS).toLocaleString("uz-UZ")}</td>
+                <td className="text-right">
+                  {(it.qty * it.priceUZS).toLocaleString("uz-UZ")}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -81,7 +106,9 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
           <span>{invoice.subtotal.toLocaleString("uz-UZ")} UZS</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-slate-600">Chegirma{invoice.discount ? ` (${invoice.discount.name})` : ""}:</span>
+          <span className="text-slate-600">
+            Chegirma{invoice.discount ? ` (${invoice.discount.name})` : ""}:
+          </span>
           <span>{invoice.discountAmt.toLocaleString("uz-UZ")} UZS</span>
         </div>
         <div className="flex justify-between text-lg font-semibold">
@@ -91,4 +118,14 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
       </div>
     </div>
   );
+}
+
+// Agar metadata kerak bo‘lsa, xuddi shu pattern:
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return { title: `Hisob-faktura ${id}` };
 }
