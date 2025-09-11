@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 const ALLOWED_ORIGINS = [
   "http://localhost:5173",
   "https://sino-a-iminiapp.vercel.app/",
+  "https://sinominiapp.netlify.app/"
 ];
 
 // Dinamik tekshiradigan helper
