@@ -53,6 +53,24 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   handler satisfies AppPageConfig<"/calendar">
 }
 
+// Validate ../../app/(dashboard)/doctors/[id]/edit/page.tsx
+{
+  const handler = {} as typeof import("../../app/(dashboard)/doctors/[id]/edit/page.js")
+  handler satisfies AppPageConfig<"/doctors/[id]/edit">
+}
+
+// Validate ../../app/(dashboard)/doctors/new/page.tsx
+{
+  const handler = {} as typeof import("../../app/(dashboard)/doctors/new/page.js")
+  handler satisfies AppPageConfig<"/doctors/new">
+}
+
+// Validate ../../app/(dashboard)/doctors/page.tsx
+{
+  const handler = {} as typeof import("../../app/(dashboard)/doctors/page.js")
+  handler satisfies AppPageConfig<"/doctors">
+}
+
 // Validate ../../app/(dashboard)/kassir/[id]/page.tsx
 {
   const handler = {} as typeof import("../../app/(dashboard)/kassir/[id]/page.js")
@@ -149,6 +167,12 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   handler satisfies AppPageConfig<"/users">
 }
 
+// Validate ../../app/api/doctors/[id]/edit/page.tsx
+{
+  const handler = {} as typeof import("../../app/api/doctors/[id]/edit/page.js")
+  handler satisfies AppPageConfig<"/api/doctors/[id]/edit">
+}
+
 // Validate ../../app/login/page.tsx
 {
   const handler = {} as typeof import("../../app/login/page.js")
@@ -173,6 +197,24 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   handler satisfies RouteHandlerConfig<"/kassir/[id]/pay">
 }
 
+// Validate ../../app/api/appointments/[id]/route.ts
+{
+  const handler = {} as typeof import("../../app/api/appointments/[id]/route.js")
+  handler satisfies RouteHandlerConfig<"/api/appointments/[id]">
+}
+
+// Validate ../../app/api/appointments/day/route.ts
+{
+  const handler = {} as typeof import("../../app/api/appointments/day/route.js")
+  handler satisfies RouteHandlerConfig<"/api/appointments/day">
+}
+
+// Validate ../../app/api/appointments/route.ts
+{
+  const handler = {} as typeof import("../../app/api/appointments/route.js")
+  handler satisfies RouteHandlerConfig<"/api/appointments">
+}
+
 // Validate ../../app/api/auth/change-password/route.ts
 {
   const handler = {} as typeof import("../../app/api/auth/change-password/route.js")
@@ -183,6 +225,12 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   const handler = {} as typeof import("../../app/api/auth/login/route.js")
   handler satisfies RouteHandlerConfig<"/api/auth/login">
+}
+
+// Validate ../../app/api/calendar/route.ts
+{
+  const handler = {} as typeof import("../../app/api/calendar/route.js")
+  handler satisfies RouteHandlerConfig<"/api/calendar">
 }
 
 // Validate ../../app/api/departments/route.ts
@@ -197,6 +245,24 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   handler satisfies RouteHandlerConfig<"/api/discounts">
 }
 
+// Validate ../../app/api/doctors/[id]/availability/route.ts
+{
+  const handler = {} as typeof import("../../app/api/doctors/[id]/availability/route.js")
+  handler satisfies RouteHandlerConfig<"/api/doctors/[id]/availability">
+}
+
+// Validate ../../app/api/doctors/[id]/route.ts
+{
+  const handler = {} as typeof import("../../app/api/doctors/[id]/route.js")
+  handler satisfies RouteHandlerConfig<"/api/doctors/[id]">
+}
+
+// Validate ../../app/api/doctors/route.ts
+{
+  const handler = {} as typeof import("../../app/api/doctors/route.js")
+  handler satisfies RouteHandlerConfig<"/api/doctors">
+}
+
 // Validate ../../app/api/invoices/[id]/route.ts
 {
   const handler = {} as typeof import("../../app/api/invoices/[id]/route.js")
@@ -207,6 +273,18 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   const handler = {} as typeof import("../../app/api/invoices/route.js")
   handler satisfies RouteHandlerConfig<"/api/invoices">
+}
+
+// Validate ../../app/api/miniapp/book/route.ts
+{
+  const handler = {} as typeof import("../../app/api/miniapp/book/route.js")
+  handler satisfies RouteHandlerConfig<"/api/miniapp/book">
+}
+
+// Validate ../../app/api/miniapp/doctors/route.ts
+{
+  const handler = {} as typeof import("../../app/api/miniapp/doctors/route.js")
+  handler satisfies RouteHandlerConfig<"/api/miniapp/doctors">
 }
 
 // Validate ../../app/api/patients/route.ts
