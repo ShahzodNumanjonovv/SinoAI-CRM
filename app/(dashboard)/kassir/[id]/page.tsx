@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import InvoiceStatusButtons from "@/components/InvoiceStatusButtons";
 
-export const dynamic = "force-dynamic"; // Vercel’da statiklashmasin
+export const dynamic = "force-dynamic";
+export const revalidate = 0; // Vercel’da statiklashmasin
 
 type InvoiceDetail = {
   id: string;
