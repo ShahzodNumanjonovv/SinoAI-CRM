@@ -38,7 +38,7 @@ export default function NewDoctorForm({ departments }: { departments: Dept[] }) 
       departmentId: (String(fd.get("departmentId") ?? "").trim() || null) as string | null,
       // mini-app qo‘shimcha
       avatarUrl: String(fd.get("avatarUrl") ?? "").trim() || null,
-      experienceYears: toInt(fd.get("experienceYears")) ?? 0,
+      experience: toInt(fd.get("experienceYil")) ?? 0,
     };
 
     if (!payload.firstName || !payload.lastName || !payload.speciality) {
@@ -197,7 +197,7 @@ export default function NewDoctorForm({ departments }: { departments: Dept[] }) 
         <label className="block">
           <span className="mb-1 block text-sm text-slate-600">Tajriba (yil)</span>
           <input
-            name="experienceYears"
+            name="experienceYil"
             type="number"
             inputMode="numeric"
             min={0}
@@ -205,7 +205,7 @@ export default function NewDoctorForm({ departments }: { departments: Dept[] }) 
             className="w-full rounded border px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-600/30"
           />
           <span className="mt-1 block text-xs text-slate-500">
-            Mini-app “+ years” ni o‘zi ko‘rsatadi.
+            Mini-app “+ Yil” ni o‘zi ko‘rsatadi.
           </span>
         </label>
       </div>

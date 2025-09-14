@@ -34,7 +34,7 @@ export async function GET(req: Request) {
         lastName: true,
         speciality: true,
         priceUZS: true,
-        experienceYears: true,
+        experienceYil: true,
         avatarUrl: true,
       },
     });
@@ -51,7 +51,7 @@ export async function GET(req: Request) {
         lastName: d.lastName,
         clinic: "",
         avatar,
-        experienceYears: d.experienceYears ?? 0,
+        experienceYil: d.experienceYil ?? 0,
         rating: 4.8,
         patients: 1200,
         priceUZS: d.priceUZS,

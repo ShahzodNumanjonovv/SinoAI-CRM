@@ -16,7 +16,7 @@ type Doc = {
   departmentId?: string | null;
   // NEW:
   avatarUrl?: string | null;
-  experienceYears?: number | null;
+  experienceYil?: number | null;
 };
 
 function toInt(v: FormDataEntryValue | null): number | null {
@@ -56,7 +56,7 @@ export default function EditForm({
     // NEW fields
     const avatarUrlRaw = String(fd.get("avatarUrl") ?? "").trim();
     const avatarUrl = avatarUrlRaw === "" ? null : avatarUrlRaw;
-    const experienceYears = toInt(fd.get("experienceYears")) ?? 0;
+    const experienceYil = toInt(fd.get("experienceYil")) ?? 0;
 
     if (!firstName || !lastName || !speciality) {
       setErr("Majburiy maydonlar to‘ldirilmagan.");
@@ -77,7 +77,7 @@ export default function EditForm({
       departmentId,
       // NEW:
       avatarUrl,
-      experienceYears,
+      experienceYil,
     };
 
     startTransition(async () => {
@@ -211,11 +211,11 @@ export default function EditForm({
         <label className="block">
           <span className="mb-1 block text-sm text-slate-600">Tajriba (yil)</span>
           <input
-            name="experienceYears"
+            name="experienceYil"
             type="number"
             inputMode="numeric"
             min={0}
-            defaultValue={defaultDoctor.experienceYears ?? 0}
+            defaultValue={defaultDoctor.experience ?? 0}
             className="w-full rounded border px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-600/30"
           />
         </label>
