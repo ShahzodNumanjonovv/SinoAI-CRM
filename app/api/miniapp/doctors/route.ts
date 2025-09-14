@@ -1,16 +1,32 @@
 // app/api/miniapp/doctors/route.ts
 import { prisma } from "@/lib/db";
-import { corsNoContent, corsOk } from "@/lib/cors";
+import { corsNoContent, corsOk, corsHeaders } from "@/lib/cors";
 
-// Preflight
-export async function OPTIONS(req: Request) {
-  return corsNoContent(req);
+function getBaseUrl(req: Request) {
+  // 1) Agar PUBLIC_BASE_URL berilgan bo‘lsa – aynan shuni ishlatamiz
+  const env = process.env.PUBLIC_BASE_URL?.trim();
+  if (env) return env.replace(/\/+$/, "");
+
+  // 2) Aks holda, x-forwarded-* headerlardan yig‘amiz
+  const h = new Headers(req.headers);
+  const proto = h.get("x-forwarded-proto") || "https";
+  const host =
+    h.get("x-forwarded-host") ||
+    h.get("host") ||
+    "localhost:3000";
+  return `${proto}://${host}`.replace(/\/+$/, "");
 }
 
-// GET /api/miniapp/doctors
+export async function OPTIONS() {
+  return corsNoContent();
+}
+
 export async function GET(req: Request) {
   try {
+    const base = getBaseUrl(req); // <<<< MUHIM
+
     const doctors = await prisma.doctor.findMany({
+      // where: { active: true },
       orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
       select: {
         id: true,
@@ -25,26 +41,30 @@ export async function GET(req: Request) {
 
     const data = doctors.map((d) => {
       const raw = d.avatarUrl || "/avatar-fallback.png";
-      // Nisbiy bo‘lsa — so‘rov URL’idan absolyut qilamiz (render/netlify uchun ham to‘g‘ri)
-      const avatar = /^https?:\/\//i.test(raw) ? raw : new URL(raw, req.url).href;
+      const avatar = /^https?:\/\//i.test(raw)
+        ? raw
+        : `${base}${raw.startsWith("/") ? "" : "/"}${raw}`;
 
       return {
         id: d.id,
         firstName: d.firstName,
         lastName: d.lastName,
         clinic: "",
-        avatar, // miniapp 'avatar' nomi bilan kutadi
+        avatar,
         experienceYears: d.experienceYears ?? 0,
-        rating: 4.8,     // demo
-        patients: 1200,  // demo
+        rating: 4.8,
+        patients: 1200,
         priceUZS: d.priceUZS,
         speciality: d.speciality,
       };
     });
 
-    return corsOk({ ok: true, doctors: data }, 200, req);
-  } catch (e) {
+    return corsOk({ ok: true, doctors: data });
+  } catch (e: any) {
     console.error("miniapp/doctors GET error:", e);
-    return corsOk({ ok: false, message: "Internal error" }, 500, req);
+    return new Response(JSON.stringify({ ok: false, message: "Internal error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 }
