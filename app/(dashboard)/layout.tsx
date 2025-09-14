@@ -9,6 +9,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <Sidebar />
       <main className="flex-1">
         <Topbar />
+        <a
+  href="/api/auth/logout"
+  className="text-sm text-red-600 hover:underline"
+>
+  Logout
+</a>
         <div className="p-6">{children}</div>
       </main>
     </div>

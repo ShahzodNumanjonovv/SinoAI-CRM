@@ -1,5 +1,5 @@
 // app/(dashboard)/statistics/page.tsx
-import { getBaseUrl } from "@/lib/utils";
+import { headers } from "next/headers";
 import GenderSummaryCard from "./_components/GenderSummaryCard";
 
 type StatsResponse = {
@@ -21,33 +21,48 @@ type StatsResponse = {
     qty: number;
     revenue: number;
   }[];
-  // ixtiyoriy: agar backend qaytarsa ishlatamiz
   gender?: { male: number; female: number };
 };
 
-async function getStats(from?: string, to?: string): Promise<StatsResponse> {
-  const base = await getBaseUrl();
-  const p = new URLSearchParams();
-  if (from) p.set("from", from);
-  if (to) p.set("to", to);
+function emptyStats(from?: string, to?: string): StatsResponse {
+  return {
+    ok: false as any,
+    range: { from: from ?? null, to: to ?? null },
+    invoices: { draft: 0, paid: 0, unpaid: 0, cancelled: 0, all: 0 },
+    revenue: { total: 0, paid: 0, unpaid: 0 },
+    byDay: [],
+    topServices: [],
+    gender: { male: 0, female: 0 },
+  };
+}
 
-  const res = await fetch(`${base}/api/statistics?${p.toString()}`, {
+// ✅ Absolute URL + cookie forward (auth bilan ishlashi uchun)
+async function getStats(from?: string, to?: string): Promise<StatsResponse> {
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const cookie = h.get("cookie") ?? "";
+
+  const qs = new URLSearchParams();
+  if (from) qs.set("from", from);
+  if (to) qs.set("to", to);
+  const url = `${proto}://${host}/api/statistics${qs.toString() ? `?${qs.toString()}` : ""}`;
+
+  const res = await fetch(url, {
     cache: "no-store",
+    // Muhim: cookie’ni forward qilamiz — middleware seni login’ga burmasin
+    headers: { cookie },
   });
 
-  if (!res.ok) {
-    // Fallback – UI uchun bo‘sh struktura
-    return {
-      ok: false as any,
-      range: { from: from ?? null, to: to ?? null },
-      invoices: { draft: 0, paid: 0, unpaid: 0, cancelled: 0, all: 0 },
-      revenue: { total: 0, paid: 0, unpaid: 0 },
-      byDay: [],
-      topServices: [],
-      gender: { male: 0, female: 0 },
-    };
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("application/json") || !res.ok) {
+    return emptyStats(from, to);
   }
-  return (await res.json()) as StatsResponse;
+  try {
+    return (await res.json()) as StatsResponse;
+  } catch {
+    return emptyStats(from, to);
+  }
 }
 
 export default async function StatisticsPage({
@@ -76,14 +91,11 @@ export default async function StatisticsPage({
         </form>
       </div>
 
-      {/* Umumiy hisobot + KPI’lar */}
       <div className="grid gap-4 lg:grid-cols-4">
-        {/* 1) Gender kartasi */}
         <div className="lg:col-span-2">
           <GenderSummaryCard male={male} female={female} />
         </div>
 
-        {/* 2) KPI cards */}
         <div className="rounded-xl border p-4">
           <div className="text-slate-500">Umumiy tushum</div>
           <div className="mt-1 text-2xl font-bold">
@@ -107,13 +119,11 @@ export default async function StatisticsPage({
           <div className="mt-1 text-2xl font-bold">{fmt(stats.invoices.all)}</div>
           <div className="mt-1 text-xs text-slate-500">
             Paid: {fmt(stats.invoices.paid)} • Unpaid: {fmt(stats.invoices.unpaid)} •
-            Draft: {fmt(stats.invoices.draft)} • Cancelled:{" "}
-            {fmt(stats.invoices.cancelled)}
+            Draft: {fmt(stats.invoices.draft)} • Cancelled: {fmt(stats.invoices.cancelled)}
           </div>
         </div>
       </div>
 
-      {/* Kunlar kesimida tushum */}
       <div className="rounded-xl border overflow-hidden">
         <div className="border-b bg-gray-50 px-4 py-2 font-medium">
           Kunlar bo‘yicha tushum
@@ -143,7 +153,6 @@ export default async function StatisticsPage({
         </table>
       </div>
 
-      {/* Eng ko‘p sotilgan xizmatlar */}
       <div className="rounded-xl border overflow-hidden">
         <div className="border-b bg-gray-50 px-4 py-2 font-medium">
           Eng ko‘p sotilgan xizmatlar

@@ -1,3 +1,7 @@
 {
-  "/api/miniapp/doctors/route": "app/api/miniapp/doctors/route.js"
+  "/(dashboard)/statistics/page": "app/(dashboard)/statistics/page.js",
+  "/(dashboard)/doctors/page": "app/(dashboard)/doctors/page.js",
+  "/(dashboard)/doctors/[id]/edit/page": "app/(dashboard)/doctors/[id]/edit/page.js",
+  "/(dashboard)/calendar/page": "app/(dashboard)/calendar/page.js",
+  "/(dashboard)/doctors/new/page": "app/(dashboard)/doctors/new/page.js"
 }

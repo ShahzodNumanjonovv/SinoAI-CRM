@@ -1,42 +1,84 @@
-// app/login/page.tsx
-import type { Metadata } from "next";
-import LoginForm from "@/components/auth/LoginForm";
-
-export const metadata: Metadata = {
-  title: "Kirish — SinoAI",
-};
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const r = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const j = await res.json();
+      if (!res.ok || !j?.ok) {
+        setErr(j?.message ?? "Login failed");
+        return;
+      }
+      r.replace("/statistics"); // admin home’ingiz qayer bo‘lsa shuni qo‘ying
+    } catch (e: any) {
+      setErr(e?.message ?? "Network error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 grid grid-cols-1 lg:grid-cols-[340px_1fr]">
-      {/* Chap panel */}
-      <aside className="hidden lg:flex flex-col justify-between rounded-r-2xl bg-white p-8 shadow-sm">
-        <div className="text-emerald-700 font-semibold text-lg">SinoAI</div>
+    <main className="min-h-screen grid place-items-center bg-slate-100">
+      <form
+        onSubmit={onSubmit}
+        className="w-full max-w-sm rounded-2xl bg-white shadow p-6 space-y-4"
+      >
+        <h1 className="text-xl font-semibold text-center">Sign in</h1>
 
-        <div className="mt-10">
-          <h1 className="text-2xl font-semibold text-slate-800">
-            Salom, xush kelibsiz
-          </h1>
-        </div>
+        <label className="block">
+          <div className="text-sm text-slate-600 mb-1">Email</div>
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-xl border px-3 py-2"
+            placeholder="admin@SinoAI.com"
+          />
+        </label>
 
-        <div className="h-10" />
-      </aside>
+        <label className="block">
+          <div className="text-sm text-slate-600 mb-1">Password</div>
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full rounded-xl border px-3 py-2"
+            placeholder="••••••••"
+          />
+        </label>
 
-      {/* O'ng — forma */}
-      <main className="flex items-center justify-center p-6">
-        <div className="w-full max-w-md">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-slate-800">
-              SinoAI tizimiga kirish
-            </h2>
-            <p className="text-slate-500 text-sm mt-1">
-              Quyidagi ma’lumotlarni kiriting.
-            </p>
-          </div>
+        {err && <div className="text-sm text-red-600">{err}</div>}
 
-          <LoginForm />
-        </div>
-      </main>
-    </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-xl bg-[#6f8f8a] text-white py-2 font-medium
+                     hover:opacity-90 disabled:opacity-60"
+        >
+          {loading ? "Signing in…" : "Sign in"}
+        </button>
+
+        <p className="text-xs text-slate-500 text-center mt-2">
+          Demo: admin@SinoAI.com / orzu123
+        </p>
+      </form>
+    </main>
   );
 }

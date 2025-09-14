@@ -1,3 +1,4 @@
+// prisma/seed.ts
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -49,20 +50,20 @@ async function main() {
   });
 
   // 5) ADMIN foydalanuvchi
-  // Login sifatida "phone" maydonidan foydalanamiz (sizda email yo‘q)
-  const adminLogin = "admin@example.com"; // formdagi "login" maydonga shu yoziladi
+  // ✅ endi email orqali login qilinadi
+  const adminEmail = "admin@example.com";
   const adminPassHash = await bcrypt.hash("Admin123", 10);
 
   await prisma.user.upsert({
-    where: { email: "admin@example.com" }, // 🔑 endi email bo‘yicha upsert
+    where: { email: adminEmail },
     update: {},
     create: {
       firstName: "Admin",
       lastName: "User",
-      phone: "+998900000000",       // ixtiyoriy, bo'sh qoldirmang
-      email: "admin@example.com",   // 🔥 muhim
-      role: "ADMIN",                // model enumiga mos qatnashsin
-      password: adminPassHash,
+      phone: "+998900000000",    // bo‘sh qoldirmang
+      email: adminEmail,        // 🔑 login uchun ishlatiladi
+      role: "ADMIN",
+      password: adminPassHash,  // bcrypt hash
     },
   });
 

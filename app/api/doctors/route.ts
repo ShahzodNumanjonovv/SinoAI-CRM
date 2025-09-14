@@ -2,86 +2,116 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-/* ---------- GET: list/search ---------- */
+/* ---------------------- helpers ---------------------- */
+const SPECIALITIES = new Set(["Kardiolog", "Teropevt", "Ginekolog", "Urolog"]);
+
+function makeCode() {
+  const d = new Date();
+  const seg = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(
+    d.getDate()
+  ).padStart(2, "0")}${String(d.getSeconds()).padStart(2, "0")}${Math.floor(Math.random() * 90 + 10)}`;
+  return `DR-${seg}`;
+}
+
+function toNum(v: unknown, def: number | null = null) {
+  if (v === null || v === undefined || v === "") return def;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : def;
+}
+
+function cleanStr(v: unknown) {
+  return (typeof v === "string" ? v : "").trim();
+}
+
+/* ---------------------- GET: list/search ---------------------- */
+// /api/doctors?q=...&departmentId=...&speciality=...
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const q = (searchParams.get("q") || "").trim();
+  const q = cleanStr(searchParams.get("q"));
+  const departmentId = cleanStr(searchParams.get("departmentId"));
+  const speciality = cleanStr(searchParams.get("speciality"));
 
-  const where =
-    q.length > 0
-      ? {
-          OR: [
-            { firstName: { contains: q, mode: "insensitive" } },
-            { lastName: { contains: q, mode: "insensitive" } },
-            { speciality: { contains: q, mode: "insensitive" } },
-            { code: { contains: q, mode: "insensitive" } },
-            ...(Number.isFinite(Number(q)) ? [{ roomNo: Number(q) }] : []),
-          ],
-        }
-      : undefined;
+  const where: any = {};
+
+  if (q) {
+    where.OR = [
+      { firstName: { contains: q, mode: "insensitive" } },
+      { lastName: { contains: q, mode: "insensitive" } },
+      { speciality: { contains: q, mode: "insensitive" } },
+      { code: { contains: q, mode: "insensitive" } },
+    ];
+
+    const qNum = Number(q);
+    if (Number.isFinite(qNum)) {
+      // raqam bo‘lsa xona raqami bo‘yicha ham qidiramiz
+      where.OR.push({ roomNo: qNum });
+    }
+  }
+
+  if (departmentId) where.departmentId = departmentId;
+  if (speciality) where.speciality = { equals: speciality, mode: "insensitive" };
 
   const doctors = await prisma.doctor.findMany({
     where,
-    include: { department: true },
     orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
     take: 200,
+    // MUHIM: avatarUrl ham qaytsin
+    select: {
+      id: true,
+      code: true,
+      firstName: true,
+      lastName: true,
+      speciality: true,
+      roomNo: true,
+      priceUZS: true,
+      experienceYears: true,
+      avatarUrl: true,
+      departmentId: true,
+      department: { select: { id: true, name: true } },
+      createdAt: true,
+      updatedAt: true,
+    },
   });
 
   return NextResponse.json({ ok: true, doctors });
 }
 
-/* ---------- helpers ---------- */
-function makeCode() {
-  const d = new Date();
-  const seg = `${d.getFullYear()}${(d.getMonth() + 1)
-    .toString()
-    .padStart(2, "0")}${d.getDate().toString().padStart(2, "0")}${d
-    .getSeconds()
-    .toString()
-    .padStart(2, "0")}${Math.floor(Math.random() * 90 + 10)}`;
-  return `DR-${seg}`;
-}
-
-const SPECIALITIES = new Set(["Kardiolog", "Teropeft", "Genekolog", "Urolog"]);
-
-/* ---------- POST: create ---------- */
+/* ---------------------- POST: create ---------------------- */
 export async function POST(req: Request) {
   try {
     const b = await req.json();
 
-    // required checks
-    if (!b?.firstName || !b?.lastName || !b?.speciality) {
+    const firstName = cleanStr(b?.firstName);
+    const lastName = cleanStr(b?.lastName);
+    const speciality = cleanStr(b?.speciality);
+
+    if (!firstName || !lastName || !speciality) {
       return NextResponse.json(
-        { ok: false, message: "Majburiy maydonlar yetarli emas" },
+        { ok: false, message: "Majburiy maydonlar to‘ldirilmagan" },
         { status: 400 }
       );
     }
-    if (!SPECIALITIES.has(b.speciality)) {
+    if (!SPECIALITIES.has(speciality)) {
       return NextResponse.json(
         { ok: false, message: "Mutaxassislik noto‘g‘ri" },
         { status: 400 }
       );
     }
 
-    // normalize
     const data: any = {
-      code: (b.code?.toString().trim() || null) as string | null,
-      firstName: String(b.firstName),
-      lastName: String(b.lastName),
-      speciality: String(b.speciality),
-      roomNo:
-        b.roomNo !== undefined && b.roomNo !== null && `${b.roomNo}` !== ""
-          ? Number(b.roomNo)
-          : null,
-      priceUZS: Number(b.priceUZS ?? 0),
-      departmentId: b.departmentId || null,
+      code: cleanStr(b?.code) || null,
+      firstName,
+      lastName,
+      speciality,
+      roomNo: toNum(b?.roomNo, null),
+      priceUZS: toNum(b?.priceUZS, 0),
+      departmentId: cleanStr(b?.departmentId) || null,
+      experienceYears: toNum(b?.experienceYears, 0),
 
-      // mini-app uchun qo‘shimcha fieldlar
-      avatarUrl: b.avatarUrl ?? null,
-      experienceYears: Number(b.experienceYears ?? 0),
+      // MUHIM: Supabase’dan kelgan URL shu yerga yoziladi
+      avatarUrl: cleanStr(b?.avatarUrl) || null,
     };
 
-    // agar code berilmagan bo‘lsa — generatsiya qilamiz
     if (!data.code) data.code = makeCode();
 
     // unique(code) to‘qnashsa 3 marta urinib ko‘ramiz
@@ -93,7 +123,6 @@ export async function POST(req: Request) {
         });
         return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
       } catch (e: any) {
-        // P2002 => unique violation on code
         if (e?.code === "P2002" && e?.meta?.target?.includes("code")) {
           data.code = makeCode();
           continue;

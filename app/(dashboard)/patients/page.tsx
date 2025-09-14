@@ -1,6 +1,7 @@
+// app/(dashboard)/patients/page.tsx
 import Link from "next/link";
-import { getBaseUrl } from "@/lib/utils";
-import SearchBox from "./_components/SearchBox"; // ⬅️ client komponent
+import { headers, cookies } from "next/headers";
+import SearchBox from "./_components/SearchBox";
 
 type Patient = {
   id: string;
@@ -12,12 +13,30 @@ type Patient = {
 };
 
 async function getPatients(q: string) {
-  const base = await getBaseUrl();
+  // Joriy so'rovdan to‘liq origin yasaymiz
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const host = h.get("host") ?? "localhost:3000";
+  const base = `${proto}://${host}`;
+
+  // Auth cookie’larni API ga uzatamiz
+  const jar = cookies();
+  const cookieHeader = jar.getAll().map(c => `${c.name}=${c.value}`).join("; ");
+
   const res = await fetch(`${base}/api/patients?q=${encodeURIComponent(q)}`, {
     cache: "no-store",
+    headers: { cookie: cookieHeader },
   });
+
   if (!res.ok) return { patients: [] as Patient[] };
-  return (await res.json()) as { ok: boolean; patients: Patient[] };
+  const ct = res.headers.get("content-type") ?? "";
+  if (!ct.includes("application/json")) return { patients: [] as Patient[] };
+
+  try {
+    return (await res.json()) as { ok: boolean; patients: Patient[] };
+  } catch {
+    return { patients: [] as Patient[] };
+  }
 }
 
 export default async function PatientsPage({
@@ -36,7 +55,6 @@ export default async function PatientsPage({
         <Link href="/patients/new" className="btn">Yangi</Link>
       </div>
 
-      {/* Live qidiruv (debounced) */}
       <SearchBox defaultValue={q} />
 
       <div className="overflow-x-auto">

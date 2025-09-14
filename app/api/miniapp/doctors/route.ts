@@ -1,49 +1,58 @@
 // app/api/miniapp/doctors/route.ts
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { corsHeaders, corsNoContent, corsOk } from "@/lib/cors";
+import { corsNoContent, corsOk, corsHeaders } from "@/lib/cors";
 
+// Preflight
 export async function OPTIONS() {
   return corsNoContent();
 }
 
-export async function GET() {
+// GET /api/miniapp/doctors
+export async function GET(req: Request) {
   try {
-    const rows = await prisma.doctor.findMany({
-      where: { /* kerak bo‘lsa filterlar */ },
+    // absolute URL yasash uchun origin
+    const origin = new URL(req.url).origin; // masalan http://localhost:3000
+
+    const doctors = await prisma.doctor.findMany({
+      // where: { active: true }, // kerak bo‘lsa oching
       orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
       select: {
         id: true,
         firstName: true,
         lastName: true,
         speciality: true,
-        department: { select: { name: true } },
-        avatarUrl: true,          // schema’da bor (yo‘q bo‘lsa null qaytadi)
-        experienceYears: true,    // number
         priceUZS: true,
+        experienceYears: true,
+        avatarUrl: true,
       },
     });
 
-    // MiniApp’ning DoctorCard formatiga moslashtiramiz
-    const doctors = rows.map((d) => ({
-      id: d.id,
-      firstName: d.firstName,
-      lastName: d.lastName,
-      clinic: d.department?.name ?? "",        // DoctorCard’dagi “clinic” sarlavhasi
-      avatar: d.avatarUrl || "/avatar-fallback.png",
-      experienceYears: typeof d.experienceYears === "number" ? d.experienceYears : 0,
-      rating: 4.8,                              // hozircha stub (UI o‘zgarmasin)
-      patients: 1200,                           // hozircha stub (UI o‘zgarmasin)
-      priceUZS: d.priceUZS,
-      speciality: d.speciality,
-    }));
+    const data = doctors.map((d) => {
+      // avatar absolute bo‘lsin (agar nisbiy bo‘lsa 5173 da ham to‘g‘ri ishlaydi)
+      const raw = d.avatarUrl || "/avatar-fallback.png";
+      const avatar =
+        /^https?:\/\//i.test(raw) ? raw : `${origin}${raw.startsWith("/") ? "" : "/"}${raw}`;
 
-    return corsOk({ ok: true, doctors }, 200);
-  } catch (e) {
+      return {
+        id: d.id,
+        firstName: d.firstName,
+        lastName: d.lastName,
+        clinic: "", // hozircha bo'sh
+        avatar, // mini-app 'avatar' nomi bilan kutadi
+        experienceYears: d.experienceYears ?? 0,
+        rating: 4.8,    // demo
+        patients: 1200, // demo
+        priceUZS: d.priceUZS,
+        speciality: d.speciality,
+      };
+    });
+
+    return corsOk({ ok: true, doctors: data });
+  } catch (e: any) {
     console.error("miniapp/doctors GET error:", e);
-    return new NextResponse(JSON.stringify({ ok: false, message: "Internal error" }), {
+    return new Response(JSON.stringify({ ok: false, message: "Internal error" }), {
       status: 500,
-      headers: corsHeaders({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   }
 }

@@ -1,15 +1,12 @@
-// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-// ---------- MODELS (ec_* ga map qilingan) ----------
 
 model User {
   id        String   @id @default(cuid())
@@ -17,7 +14,7 @@ model User {
   lastName  String
   phone     String   @unique
   email     String?  @unique
-  role      String   @default("RECEPTION") // ADMIN | MANAGER | DOCTOR | RECEPTION
+  role      String   @default("RECEPTION")
   password  String
   createdAt DateTime @default(now())
 
@@ -25,66 +22,79 @@ model User {
 }
 
 model Department {
-  id       String   @id @default(cuid())
-  name     String   @unique
-  active   Boolean  @default(true)
-
-  // relations
-  services Service[]
+  id       String    @id @default(cuid())
+  name     String    @unique
+  active   Boolean   @default(true)
   doctors  Doctor[]
+  services Service[]
 
   @@map("ec_departments")
 }
 
-model Patient {
-  id        String    @id @default(cuid())
-  firstName String
-  lastName  String
-  phone     String    @unique
-  birthDate DateTime?
-  gender    String    // MALE | FEMALE
-  address   String?
-  createdAt DateTime  @default(now())
+model AppointmentHold {
+  id        String   @id @default(cuid())
+  doctorId  String
+  date      DateTime
+  from      String // "10:00"
+  to        String // "10:30"
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 
-  invoices     Invoice[]
+  // ↔ Doctor bilan relation (nom: "DoctorHolds")
+  doctor Doctor @relation("DoctorHolds", fields: [doctorId], references: [id])
+
+  @@unique([doctorId, date, from]) // bir slotga bitta hold
+  @@index([expiresAt])
+  @@map("ec_appointment_holds")
+}
+
+model Patient {
+  id           String        @id @default(cuid())
+  firstName    String
+  lastName     String
+  phone        String        @unique
+  birthDate    DateTime?
+  gender       String
+  address      String?
+  createdAt    DateTime      @default(now())
   appointments Appointment[]
+  invoices     Invoice[]
 
   @@map("ec_patients")
 }
 
 model Doctor {
-  id             String      @id @default(cuid())
-  code           String?     @unique
-  firstName      String
-  lastName       String
-  speciality     String
-  roomNo         Int?
-  priceUZS       Int
-  departmentId   String?
-  department     Department? @relation(fields: [departmentId], references: [id])
-
-  // Mini-app uchun qo‘shimcha
+  id              String   @id @default(cuid())
+  code            String?  @unique
+  firstName       String
+  lastName        String
+  speciality      String
+  roomNo          Int?
+  priceUZS        Int
+  departmentId    String?
   avatarUrl       String?
-  experienceYears Int        @default(0)
+  experienceYears Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  appointments   Appointment[]
+  // relations
+  appointments Appointment[]
+  department   Department?       @relation(fields: [departmentId], references: [id])
+  holds        AppointmentHold[] @relation("DoctorHolds") // <-- YANGI: AppointmentHold qarshi tomoni
 
   @@map("ec_doctors")
 }
 
 model Service {
-  id           String      @id @default(cuid())
-  code         String?     @unique
+  id           String        @id @default(cuid())
+  code         String?       @unique
   name         String
   priceUZS     Int
   departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  active       Boolean     @default(true)
-  createdAt    DateTime    @default(now())
-
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
   items        InvoiceItem[]
+  department   Department?   @relation(fields: [departmentId], references: [id])
 
   @@map("ec_services")
 }
@@ -92,30 +102,28 @@ model Service {
 model Discount {
   id        String    @id @default(cuid())
   name      String
-  dtype     String    // PERCENT | FIXED
+  dtype     String
   value     Int
   active    Boolean   @default(true)
   createdAt DateTime  @default(now())
-
   invoices  Invoice[]
 
   @@map("ec_discounts")
 }
 
 model Invoice {
-  id          String     @id @default(cuid())
-  code        Int        @unique
+  id          String        @id @default(cuid())
+  code        Int           @unique
   patientId   String
-  patient     Patient    @relation(fields: [patientId], references: [id])
-  status      String     @default("UNPAID") // DRAFT | UNPAID | PAID | CANCELLED
-  subtotal    Int        @default(0)
+  status      String        @default("UNPAID")
+  subtotal    Int           @default(0)
   discountId  String?
-  discount    Discount?  @relation(fields: [discountId], references: [id])
-  discountAmt Int        @default(0)
-  total       Int        @default(0)
-  createdAt   DateTime   @default(now())
-
+  discountAmt Int           @default(0)
+  total       Int           @default(0)
+  createdAt   DateTime      @default(now())
   items       InvoiceItem[]
+  discount    Discount?     @relation(fields: [discountId], references: [id])
+  patient     Patient       @relation(fields: [patientId], references: [id])
 
   @@map("ec_invoices")
 }
@@ -126,11 +134,31 @@ model InvoiceItem {
   serviceId String
   qty       Int     @default(1)
   priceUZS  Int
-
   invoice   Invoice @relation(fields: [invoiceId], references: [id])
   service   Service @relation(fields: [serviceId], references: [id])
 
   @@map("ec_invoice_items")
+}
+
+model Appointment {
+  id        String            @id @default(cuid())
+  date      DateTime
+  from      String
+  to        String
+  note      String?
+  source    String            @default("miniapp")
+  status    AppointmentStatus @default(PENDING)
+  doctorId  String
+  patientId String
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  doctor  Doctor  @relation(fields: [doctorId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@unique([doctorId, date, from])
+  @@index([date, doctorId])
+  @@map("ec_appointments")
 }
 
 enum AppointmentStatus {
@@ -138,28 +166,4 @@ enum AppointmentStatus {
   CONFIRMED
   CANCELLED
   DONE
-}
-
-model Appointment {
-  id        String   @id @default(cuid())
-  date      DateTime
-  from      String   // "13:00"
-  to        String   // "13:30"
-  note      String?
-  source    String   @default("miniapp")
-  status    AppointmentStatus @default(PENDING)
-
-  doctorId  String
-  doctor    Doctor   @relation(fields: [doctorId], references: [id])
-
-  patientId String
-  patient   Patient  @relation(fields: [patientId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([doctorId, date, from])
-  @@index([date, doctorId])
-
-  @@map("ec_appointments")
 }

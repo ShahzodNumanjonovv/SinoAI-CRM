@@ -6,6 +6,7 @@ const ALLOWED_ORIGINS = [
   "https://sino-a-iminiapp.vercel.app/",
   "https://sinominiapp.netlify.app/"
 ];
+const ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
 
 // Dinamik tekshiradigan helper
 function getAllowedOrigin(origin: string | null) {
@@ -15,23 +16,23 @@ function getAllowedOrigin(origin: string | null) {
   return "*"; // ruxsat berilmagan bo‘lsa fallback
 }
 
-export function corsHeaders(extra: Record<string, string> = {}, origin: string | null = null) {
-  return {
-    "Access-Control-Allow-Origin": getAllowedOrigin(origin),
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Credentials": "true",
-    ...extra,
-  };
-}
+export const corsHeaders: Record<string, string> = {
+  "Access-Control-Allow-Origin": ORIGIN,
+  "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type,Authorization",
+  "Access-Control-Allow-Credentials": "true",
+};
 
-export function corsOk(body: any, status = 200, origin: string | null = null) {
-  return new NextResponse(JSON.stringify(body), {
+export function corsOk(body: any, status = 200) {
+  return new Response(JSON.stringify(body), {
     status,
-    headers: corsHeaders({ "Content-Type": "application/json" }, origin),
+    headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 }
 
-export function corsNoContent(origin: string | null = null) {
-  return new NextResponse(null, { status: 204, headers: corsHeaders({}, origin) });
+export function corsNoContent() {
+  return new Response(null, {
+    status: 204,
+    headers: { ...corsHeaders } as HeadersInit,
+  });
 }

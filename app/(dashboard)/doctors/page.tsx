@@ -1,5 +1,6 @@
 // app/(dashboard)/doctors/page.tsx
 import Link from "next/link";
+import { headers } from "next/headers";
 import { getBaseUrl } from "@/lib/utils";
 import SearchBox from "@/components/SearchBox";
 import DoctorActions from "./_components/DoctorActions";
@@ -18,11 +19,25 @@ type DoctorRow = {
 
 async function getData(q: string): Promise<DoctorRow[]> {
   const base = await getBaseUrl();
-  const url = `${base}/api/doctors?q=${encodeURIComponent(q || "")}`;
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return (data.doctors ?? []) as DoctorRow[];
+  const cookie = (await headers()).get("cookie") ?? ""; // <- auth cookie’ni forward
+  const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+  const url = `${base}/api/doctors${qs}`;
+
+  const res = await fetch(url, {
+    cache: "no-store",
+    headers: { cookie },
+  });
+
+  // JSON guard: agar HTML qaytsa yoki xato bo‘lsa — bo‘sh ro‘yxat
+  const ct = res.headers.get("content-type") || "";
+  if (!res.ok || !ct.includes("application/json")) return [];
+
+  try {
+    const data = await res.json();
+    return (data.doctors ?? []) as DoctorRow[];
+  } catch {
+    return [];
+  }
 }
 
 export default async function DoctorsPage({
@@ -63,8 +78,6 @@ export default async function DoctorsPage({
               <th className="text-left">Xona</th>
               <th className="text-left">Narxi (UZS)</th>
               <th className="text-left">Bo‘lim</th>
-
-              {/* Endi yozuv */}
               <th className="text-right">Amallar</th>
             </tr>
           </thead>
@@ -80,9 +93,7 @@ export default async function DoctorsPage({
                 <td>{d.roomNo ?? "-"}</td>
                 <td className="tabular-nums">{nf.format(d.priceUZS)}</td>
                 <td>{d.department?.name ?? "-"}</td>
-
                 <td className="text-right">
-                  {/* DoctorActions menyu ichida dropdownni chapga hizalash kerak */}
                   <DoctorActions id={d.id} align="left" />
                 </td>
               </tr>
