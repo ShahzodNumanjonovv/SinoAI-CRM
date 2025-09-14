@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { serviceSchema } from "@/lib/schema";
 
-
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const raw = (searchParams.get("q") || "").trim();
@@ -13,17 +12,19 @@ export async function GET(req: Request) {
   let where: any = undefined;
 
   if (q.length >= 2) {
+    const contains = (v: string) => ({ contains: v, mode: "insensitive" as const });
+
     const or: any[] = [
-      { name: { contains: q } },
-      { code: { contains: q } }, // code string bo‘lsa
-      { department: { name: { contains: q } } },
+      { name: contains(q) },
+      { code: contains(q) },                                  // code string bo‘lsa OK
+      { department: { is: { name: contains(q) } } },          // relation bo‘yicha qidirish
     ];
 
     if (tokens.length >= 2) {
       const [a, b] = tokens;
       or.push(
-        { AND: [{ name: { contains: a } }, { department: { name: { contains: b } } }] },
-        { AND: [{ name: { contains: b } }, { department: { name: { contains: a } } }] },
+        { AND: [{ name: contains(a) }, { department: { is: { name: contains(b) } } }] },
+        { AND: [{ name: contains(b) }, { department: { is: { name: contains(a) } } }] },
       );
     }
 
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
     where,
     orderBy: [{ code: "asc" }, { name: "asc" }],
     take: 200,
-    include: { department: true },
+    include: { department: { select: { id: true, name: true } } },
   });
 
   return NextResponse.json({ ok: true, services });
@@ -44,17 +45,23 @@ export async function POST(req: Request) {
   try {
     const json = await req.json();
     const s = serviceSchema.parse(json);
+
     const service = await prisma.service.create({
       data: {
-        code: s.code,
+        code: s.code ?? null,
         name: s.name,
         priceUZS: s.priceUZS,
-        departmentId: s.departmentId || null,
-        // active: s.active ?? true, // (ixtiyoriy) agar schema’da bo‘lsa
+        departmentId: s.departmentId ?? null,
+        // active: s.active ?? true, // agar schema’da bo‘lsa yoqib qo‘ying
       },
+      include: { department: { select: { id: true, name: true } } },
     });
+
     return NextResponse.json({ ok: true, service });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? "Invalid data" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: e?.message ?? "Invalid data" },
+      { status: 400 },
+    );
   }
 }
