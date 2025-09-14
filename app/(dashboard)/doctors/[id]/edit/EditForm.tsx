@@ -16,7 +16,7 @@ type Doc = {
   departmentId?: string | null;
   // NEW:
   avatarUrl?: string | null;
-  experienceYil?: number | null;
+  experienceYears?: number | null;
 };
 
 function toInt(v: FormDataEntryValue | null): number | null {
@@ -56,7 +56,7 @@ export default function EditForm({
     // NEW fields
     const avatarUrlRaw = String(fd.get("avatarUrl") ?? "").trim();
     const avatarUrl = avatarUrlRaw === "" ? null : avatarUrlRaw;
-    const experienceYil = toInt(fd.get("experienceYil")) ?? 0;
+    const experienceYears = toInt(fd.get("experienceYears")) ?? 0;
 
     if (!firstName || !lastName || !speciality) {
       setErr("Majburiy maydonlar to‘ldirilmagan.");
@@ -77,7 +77,7 @@ export default function EditForm({
       departmentId,
       // NEW:
       avatarUrl,
-      experienceYil,
+      experienceYears,
     };
 
     startTransition(async () => {
@@ -209,9 +209,9 @@ export default function EditForm({
 
         {/* NEW: Tajriba (yil) – faqat raqam. UI’da “+ years” o‘zi qo‘shiladi */}
         <label className="block">
-          <span className="mb-1 block text-sm text-slate-600">Tajriba (yil)</span>
+          <span className="mb-1 block text-sm text-slate-600">Tajriba (Years)</span>
           <input
-            name="experienceYil"
+            name="experienceYears"
             type="number"
             inputMode="numeric"
             min={0}

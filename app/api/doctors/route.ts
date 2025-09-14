@@ -64,7 +64,7 @@ export async function GET(req: Request) {
       speciality: true,
       roomNo: true,
       priceUZS: true,
-      experienceYil: true,
+      experienceYears: true,
       avatarUrl: true,
       departmentId: true,
       department: { select: { id: true, name: true } },
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
       roomNo: toNum(b?.roomNo, null),
       priceUZS: toNum(b?.priceUZS, 0),
       departmentId: cleanStr(b?.departmentId) || null,
-      experienceYil: toNum(b?.experienceYil, 0),
+      experienceYears: toNum(b?.experienceYears, 0),
 
       // MUHIM: Supabase’dan kelgan URL shu yerga yoziladi
       avatarUrl: cleanStr(b?.avatarUrl) || null,
