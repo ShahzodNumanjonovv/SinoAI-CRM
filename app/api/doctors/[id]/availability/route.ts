@@ -2,8 +2,9 @@
 import { prisma } from "@/lib/db";
 import { corsNoContent, corsOk } from "@/lib/cors";
 
-export async function OPTIONS() {
-  return corsNoContent();
+// Preflight
+export async function OPTIONS(req: Request) {
+  return corsNoContent(req);
 }
 
 export async function GET(
@@ -16,12 +17,14 @@ export async function GET(
     const dateStr = url.searchParams.get("date"); // "YYYY-MM-DD"
 
     if (!id || !dateStr) {
-      return corsOk({ ok: false, message: "doctorId/date required" }, 400);
+      return corsOk({ ok: false, message: "doctorId/date required" }, 400, req);
     }
 
-    const date = new Date(dateStr); // Sana faqat kun sifatida ishlatiladi (DB ham shunday)
+    // Sana/timezone muammolarini oldini olish: kun boshini UTC’da olamiz
+    // (agar DB’da DATE/kun sifatida saqlansa ham to‘g‘ri tushadi)
+    const date = new Date(`${dateStr}T00:00:00.000Z`);
 
-    // 1) CANCELLED bo‘lmagan appointmentlar (PENDING/CONFIRMED/DONE)
+    // 1) CANCELLED bo‘lmagan appointmentlar
     const appts = await prisma.appointment.findMany({
       where: {
         doctorId: id,
@@ -42,14 +45,14 @@ export async function GET(
       select: { from: true },
     });
 
-    // 3) Birlashtiramiz va takrorlarni olib tashlaymiz
-    const busy = Array.from(
+    // 3) Band slotlarni unikal qilamiz
+    const busySlots = Array.from(
       new Set<string>([...appts, ...holds].map((r) => r.from))
     );
 
-    return corsOk({ ok: true, busySlots: busy });
+    return corsOk({ ok: true, busySlots }, 200, req);
   } catch (e) {
-    console.error(e);
-    return corsOk({ ok: false, message: "Internal error" }, 500);
+    console.error("availability GET error:", e);
+    return corsOk({ ok: false, message: "Internal error" }, 500, req);
   }
 }
